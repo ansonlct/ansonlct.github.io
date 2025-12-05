@@ -1,0 +1,774 @@
+/*
+=========================================================
+1. 基礎設定與變數 (日夜模式)
+=========================================================
+*/
+:root {
+    /* 變數: 日間模式 (預設) */
+    --main-bg: #f5f5f5;
+    --text-color: #333;
+    --dock-bg: rgba(255, 255, 255, 0.25);
+    --icon-color: #000;
+    --card-bg: rgba(255, 255, 255, 0.5); /* 日間卡片 */
+    --glass-border: rgba(255, 255, 255, 0.4);
+    
+    /* 遊戲相關變數 */
+    --game-bg: rgba(255, 255, 255, 0.6); 
+    --game-canvas-bg: #f5f5f5; /* 畫布背景 */
+    --game-line-color: #aaa; /* 地面線條 */
+    --game-element-color: #333; /* 玩家/障礙物 */
+    --game-shadow-color: rgba(0, 0, 0, 0.1);
+
+    /* ⚡️ 新增: 日間模式 - 糖果色微粒 */
+    --particle-color-1: #FFC0CB; /* 粉紅 (Pink) */
+    --particle-color-2: #87CEFA; /* 淺藍 (Light Sky Blue) */
+    --particle-color-3: #98FB98; /* 淺綠 (Pale Green) */
+    --particle-color-4: #FFD700; /* 金色 (Gold/Yellow) */
+
+    /* ⚡️ 新增: 日間模式 - 特效按鈕啟動時的顏色 */
+    --effect-active-bg: rgba(255, 192, 203, 0.5); /* 淡粉色半透明背景 */
+    --effect-active-glow: #FFC0CB; /* 粉色發光 */
+}
+
+.dark-mode {
+    /* 變數: 夜間模式 */
+    --main-bg: #1e1e1e;
+    --text-color: #eee;
+    --dock-bg: rgba(0, 0, 0, 0.4);
+    --icon-color: #fff;
+    --card-bg: rgba(0, 0, 0, 0.6); /* 夜間卡片 */
+    --glass-border: rgba(255, 255, 255, 0.2);
+
+    /* 遊戲相關變數 */
+    --game-bg: rgba(0, 0, 0, 0.7);
+    --game-canvas-bg: #2d2d2d; 
+    --game-line-color: #666; 
+    --game-element-color: #fff; 
+    --game-shadow-color: rgba(255, 255, 255, 0.1);
+
+    /* ⚡️ 新增: 夜間模式 - 白色微粒 */
+    --particle-color-1: #fff;
+    --particle-color-2: #fff;
+    --particle-color-3: #fff;
+    --particle-color-4: #fff;
+
+    /* ⚡️ 新增: 夜間模式 - 特效按鈕啟動時的顏色 */
+    --effect-active-bg: rgba(135, 206, 250, 0.3); /* 淡藍色半透明背景 */
+    --effect-active-glow: #87CEFA; /* 淺藍色發光 */
+}
+
+/*
+=========================================================
+2. 全域排版與背景
+=========================================================
+*/
+body {
+    /* ⚡️ 修正: 將字型統一為 Arial */
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.3; /* 行距 */
+    background-color: var(--main-bg);
+    color: var(--text-color);
+    transition: background-color 0.5s, color 0.5s;
+}
+
+h1, h2 {
+    color: var(--text-color);
+    transition: color 0.5s;
+    text-align: center;
+}
+
+/* ⚡️ 修正: 卡片標題文字變大 */
+h2 {
+    font-size: 2.2em; /* 增大字體大小 */
+    line-height: 1.2; /* 調整行高 */
+    margin-top: 0.5em; 
+    margin-bottom: 0.5em; /* 調整下邊距 */
+}
+
+/* ⚡️ 新增: 縮小卡片內的內文和列表文字 */
+.card p,
+.card ul li {
+    font-size: 0.95em;
+}
+
+
+#background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(133, 193, 233, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(247, 220, 111, 0.2) 0%, transparent 40%);
+    background-size: cover;
+    z-index: -1;
+    pointer-events: none;
+    transition: background-color 0.5s; 
+}
+
+/* 內容容器，用於居中和控制最大寬度 */
+#content-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 每個內容區塊的基礎設定 */
+.content-block {
+    min-height: 100vh; /* 確保區塊夠高，讓卡片有滾動空間 */
+    padding-top: 5vh;
+    padding-bottom: 5vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 僅 Home 區塊需置中對齊 */
+#hero-section {
+    align-items: center;
+    text-align: center;
+}
+
+/* 滾動提示箭頭 */
+.scroll-hint {
+    margin-top: 50px;
+    font-size: 2em;
+    animation: bounce 2s infinite;
+    opacity: 0.5;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/*
+=========================================================
+3. 卡片與視覺效果 (Glass Card)
+=========================================================
+*/
+.card {
+    padding: 30px;
+    /* ⚡️ 修正: 設定固定寬度並居中顯示 */
+    width: 600px; 
+    max-width: 90%; /* 確保在小螢幕上不會溢出 */
+    margin: 30px auto; 
+    
+    border-radius: 15px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+}
+
+.glass-card {
+    background-color: var(--card-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background-color 0.5s;
+}
+
+/* 核心修正：讓卡片黏貼在視窗中心附近 */
+.sticky-card {
+    position: sticky;
+    top: 18vh; /* 黏貼在距離頂部 25vh 的位置 (近似置中) */
+    z-index: 20; 
+    transition: top 0.3s; 
+}
+
+/* 確保卡片在未黏貼前位於 section 的垂直中心 */
+.content-block .card { 
+    margin-top: 25vh; 
+    margin-bottom: 0;
+}
+
+.push-space {
+    /* 創造足夠的空間讓 sticky card 向上滾動 */
+    height: 50vh; 
+}
+
+
+/*
+=========================================================
+3.1 Lovely Section 圖片畫廊樣式
+=========================================================
+*/
+.photo-gallery {
+    display: flex;
+    justify-content: center; 
+    gap: 30px;
+    margin-top: 20px;
+    flex-wrap: wrap; 
+}
+
+.photo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 150px; 
+    text-align: center;
+}
+
+.round-photo {
+    /* 圖片尺寸設定 */
+    width: 150px; 
+    height: 150px; 
+    
+    /* 核心: 將圖片修剪成圓形 */
+    border-radius: 50%;
+    
+    /* 確保圖片覆蓋容器，防止變形 */
+    object-fit: cover; 
+    
+    /* 增加陰影 */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.round-photo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.photo-caption {
+    margin-top: 10px;
+    font-size: 1em;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+
+/*
+=========================================================
+4. Dock 容器與圖標 (新 Tooltip 樣式)
+=========================================================
+*/
+#dock {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 15px;
+    border-radius: 15px;
+    background-color: var(--dock-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+    border: 1px solid var(--glass-border);
+}
+
+.dock-icon {
+    background: none;
+    border: none;
+    color: var(--icon-color);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.2s, color 0.5s, opacity 0.3s, background-color 0.3s, box-shadow 0.3s; /* ⚡️ 增加過渡效果 */
+    outline: none;
+    text-decoration: none; 
+    position: relative; /* 為了讓 Tooltip 絕對定位 */
+}
+
+/* ⚡️ 新增: 特效啟動時的視覺反饋 */
+.dock-icon.active-effect {
+    color: var(--icon-color); /* 圖標顏色保持不變 */
+    background-color: var(--effect-active-bg); /* 使用定義的半透明背景色 */
+    border-radius: 50%; /* 使其像被點亮的圓點 */
+    box-shadow: 0 0 10px var(--effect-active-glow); /* 添加發光效果，強度增加 */
+}
+
+
+/* ⚡️ 新增 Tooltip 樣式 */
+.dock-icon::after {
+    content: attr(title); /* 從 title 屬性獲取文字 */
+    position: absolute;
+    bottom: 100%; /* 位於圖標上方 */
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px); /* 初始位置和居中 */
+    
+    /* 泡泡樣式 */
+    background-color: #333; /* 黑色背景 */
+    color: #fff; /* 白色文字 */
+    padding: 2px 6px; 
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.5em; /* 調整為 0.5em (約 8px) */
+    font-weight: normal;
+    
+    /* 隱藏和過渡效果 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    
+    z-index: 101; /* 確保在 Dock 上方 */
+}
+
+/* 小三角形箭頭 */
+.dock-icon::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 2px); /* 位於提示框下方邊緣 */
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 5px 5px 0 5px;
+    border-color: #333 transparent transparent transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+    z-index: 101;
+}
+
+/* 顯示狀態 - 由 JS 動態添加 data-show 屬性來控制 */
+.dock-icon[data-show="true"]::after,
+.dock-icon[data-show="true"]::before {
+    opacity: 1;
+    visibility: visible;
+    /* 提示框向上移動，創造彈出效果 */
+    transform: translateX(-50%) translateY(-10px); 
+}
+.dock-icon[data-show="true"]::before {
+    /* 箭頭不需移動 */
+    transform: translateX(-50%);
+}
+
+/*
+=========================================================
+4.1 Contact Section 圖標美化 (修正)
+=========================================================
+*/
+
+/* ⚡️ 修正: 定義圖標容器，套用玻璃效果 */
+.contact-icons-row {
+    display: flex;
+    justify-content: center;
+    gap: 30px; /* 增加圖標間距 */
+    margin: 20px 0;
+}
+
+.contact-icons-row a {
+    /* 圖標的容器 (連結) 設置 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* 玻璃圓形容器 */
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    
+    background-color: var(--card-bg); /* 繼承卡片背景，讓它有玻璃感 */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--glass-border);
+
+    transition: transform 0.3s ease-out, box-shadow 0.3s, background-color 0.3s;
+    text-decoration: none;
+    position: relative; /* 用於底部色彩標記 */
+    overflow: hidden; /* 隱藏標記在靜止時的部分 */
+}
+
+/* 底部色彩標記 */
+.contact-icons-row a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px; /* 標記高度 */
+    transition: height 0.3s ease-out;
+}
+
+/* 懸停效果: 容器放大並讓標記擴展 */
+.contact-icons-row a:hover {
+    transform: scale(1.15); /* 放大容器 */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.contact-icons-row a:hover::after {
+    height: 100%; /* 標記顏色擴展至整個容器 */
+    opacity: 0.3; /* 降低擴展後的透明度 */
+}
+
+
+/* 圖標本身樣式 */
+.contact-icons-row i {
+    font-size: 2.2em; /* 圖標大小 */
+    color: var(--icon-color); /* 繼承夜/日模式顏色 */
+    transition: color 0.3s;
+    z-index: 1; /* 確保圖標在顏色標記上方 */
+}
+
+
+/* ⚡️ 品牌色標記: 僅用於 ::after 偽元素 (底部標記) */
+/* Email (@) */
+.contact-icons-row a:has(.fa-at)::after {
+    background-color: #4285F4; /* Google Blue */
+}
+.contact-icons-row a:has(.fa-at):hover i {
+    color: #4285F4; 
+}
+
+/* Instagram */
+.contact-icons-row a:has(.fa-instagram)::after {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); /* Instagram Gradient */
+}
+.contact-icons-row a:has(.fa-instagram):hover i {
+    color: #cc2366; 
+}
+
+/* Threads */
+.contact-icons-row a:has(.fa-threads)::after {
+    background-color: #000; /* Threads Black */
+}
+/* 夜間模式下 Threads 圖標變白 */
+.dark-mode .contact-icons-row a:has(.fa-threads)::after {
+    background-color: #fff;
+}
+.contact-icons-row a:has(.fa-threads):hover i {
+    color: #000; /* 懸停時圖標變黑 */
+}
+.dark-mode .contact-icons-row a:has(.fa-threads):hover i {
+    color: #fff; /* 夜間模式懸停時圖標變白 */
+}
+
+
+/*
+=========================================================
+4.2 Coming Soon 圖標美化 (新增)
+=========================================================
+*/
+
+.coming-soon-icons-row {
+    display: flex;
+    flex-wrap: wrap; /* 允許換行 */
+    justify-content: center;
+    gap: 15px; /* 圖標間距 */
+    margin-top: 15px;
+    padding: 10px;
+}
+
+.coming-soon-icons-row i {
+    /* 圓形容器基礎設定 (使用 i 標籤自身作為容器) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* 尺寸較小 */
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+    
+    color: var(--icon-color);
+    
+    /* 玻璃效果 */
+    background-color: var(--card-bg); 
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    
+    /* 懸停過渡 */
+    transition: transform 0.3s, box-shadow 0.3s, opacity 0.3s;
+    
+    /* 營造「Coming Soon」的感覺：半透明、略微失活 */
+    opacity: 0.5;
+    cursor: default; /* 雖然沒有連結，但視覺上像按鈕 */
+}
+
+.coming-soon-icons-row i:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px var(--icon-color);
+    opacity: 0.8; /* 懸停時稍微亮一些 */
+}
+
+
+/*
+=========================================================
+5. 側邊導航點 (已修改為無泡泡提示文字)
+=========================================================
+*/
+#side-navigation {
+    position: fixed;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* 稍微增加間距 */
+    z-index: 50;
+    /* ⚡️ 修正: 移除全局透明度 */
+    /* opacity: 0.8; */ 
+}
+
+.nav-dot {
+    /* ⚡️ 修正: 基礎尺寸放大 */
+    width: 14px; 
+    height: 14px;
+    border-radius: 50%; 
+    background-color: var(--card-bg); /* ⚡️ 使用卡片背景色，增加玻璃感 */
+    border: 1px solid var(--glass-border); /* ⚡️ 添加玻璃邊框 */
+    cursor: pointer;
+    
+    /* ⚡️ 新增: 玻璃模糊效果 */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    
+    transition: background-color 0.3s, transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+    opacity: 0.8; /* ⚡️ 非活動狀態下略微降低透明度 */
+    position: relative;
+    outline: none;
+}
+
+.nav-dot:hover {
+    transform: scale(1.3); /* ⚡️ 懸停時放大更多 */
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.nav-dot.active {
+    /* ⚡️ 修正: 活動點使用 Icon 顏色，使其突出 */
+    background-color: var(--icon-color); 
+    border: 1px solid var(--icon-color);
+    opacity: 1;
+    transform: scale(1.5); /* ⚡️ 活動時放大最明顯 */
+    
+    /* ⚡️ 新增: Active 狀態發光效果 */
+    box-shadow: 0 0 10px var(--icon-color); 
+}
+
+/* 導航點標題提示 (保持不變) */
+.nav-dot::after {
+    content: attr(data-title);
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    
+    background: none; 
+    border: none; 
+    backdrop-filter: none; 
+    
+    color: var(--text-color);
+    padding: 0 5px; 
+    border-radius: 0;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, right 0.3s; 
+    font-size: 0.9em;
+}
+
+.nav-dot:hover::after {
+    opacity: 1;
+    right: 25px; 
+}
+
+/*
+=========================================================
+6. 跑酷遊戲樣式
+=========================================================
+*/
+#runner-game-container {
+    background-color: var(--game-bg);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 20px;
+    box-shadow: 0 4px 10px var(--game-shadow-color);
+    transition: background-color 0.5s;
+}
+
+#runnerCanvas {
+    display: block;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#game-info {
+    text-align: center;
+    color: var(--text-color);
+    margin-top: 5px;
+}
+
+.score-display {
+    font-size: 0.8em; 
+    opacity: 0.8;
+}
+
+
+/*
+=========================================================
+7. 響應式調整 (手機板)
+=========================================================
+*/
+@media (max-width: 600px) {
+    
+    /* 隱藏側邊導航點 */
+    #side-navigation {
+        display: none;
+    }
+    
+    /* ⚡️ 修正卡片左右間距不平均的問題 (填滿 #content-wrapper) */
+    .card {
+        width: auto; /* 移除固定寬度 */
+        max-width: none; /* 移除 max-width 限制 */
+        margin: 30px 0; /* 移除左右 auto margin */
+    }
+
+    /* 調整 Dock 的位置與大小 */
+    #dock {
+        bottom: 10px;
+        left: 50%;
+        gap: 10px;
+        padding: 8px 10px;
+    }
+    
+    .dock-icon {
+        font-size: 1.2em;
+        padding: 3px;
+    }
+    
+    /* ⚡️ 還原 Contact 區塊在手機上的圖標大小 */
+    .contact-icons-row a {
+        width: 45px;
+        height: 45px;
+    }
+    .contact-icons-row i {
+        font-size: 1.8em;
+    }
+    
+    /* 調整內容區塊的間距 */
+    .content-block {
+        min-height: 80vh; 
+        padding: 30px 10px;
+    }
+
+    /* 調整卡片的位置 */
+    .sticky-card {
+        top: 10vh; 
+    }
+    
+    /* 確保卡片在未黏貼前位於 section 的垂直中心 */
+    .content-block .card { 
+        margin-top: 15vh; /* 減少 mobile 模式下的頂部空間 */
+        margin-bottom: 0;
+    }
+    
+    /* 調整 Lovely 區塊的間距 */
+    .photo-gallery {
+        flex-direction: row; 
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .round-photo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .photo-item {
+        max-width: 100px;
+    }
+    
+    /* 跑酷遊戲容器調整 */
+    #runner-game-container {
+        padding: 5px;
+    }
+    
+    #runnerCanvas {
+        width: 280px;
+    }
+    
+    /* 手機版 h2 字體也調整 */
+    h2 {
+        font-size: 1.7em; 
+    }
+    
+    /* 手機版隱藏 Tooltip */
+    .dock-icon::after,
+    .dock-icon::before {
+        content: none !important;
+    }
+}
+
+
+/*
+=========================================================
+8. 星光微粒特效樣式 (取代落葉)
+=========================================================
+*/
+#effect-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; 
+    z-index: 0; 
+    overflow: hidden;
+}
+
+#effect-container:not(.active) {
+    display: none;
+}
+
+/* 更改為星光微粒樣式 */
+.star-particle { 
+    position: absolute;
+    z-index: 10;
+    /* 結合漂浮和閃爍動畫 */
+    animation: 
+        float 15s ease-in-out, /* 修正: 移除 infinite，讓它只跑一次 */
+        twinkle 3s ease-in-out infinite alternate; /* 閃爍效果 (3秒一循環) */
+    
+    /* 關鍵修正: 確保動畫結束後停留在 100% 狀態 (即螢幕底部以外) */
+    animation-fill-mode: forwards; 
+    
+    transform-origin: center center; 
+    
+    /* 設置為圓點，box-shadow 將在 JS 中添加，因為顏色會變 */
+    border-radius: 50%; /* 圓形 */
+}
+
+/* 柔和漂浮動畫 (取代 fall) */
+@keyframes float {
+    0% {
+        transform: translate(0vw, -10vh) scale(0.5);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    100% {
+        /* 緩慢向下漂浮並帶有水平位移 */
+        /* 修正: 將 Y 軸位移增加至 120vh，確保微粒在動畫結束時已完全離開視窗底部。 */
+        transform: translate(20vw, 120vh) scale(1.2); 
+        opacity: 0;
+    }
+}
+
+/* 閃爍動畫 */
+@keyframes twinkle {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.3; }
+}

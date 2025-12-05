@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anson Lam</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-mode"> 
+    
+    <div id="background-container"></div>
+    
+    <div id="effect-container"></div>
+    
+    <div id="side-navigation">
+        <button class="nav-dot active" data-target="hero-section" data-title="Home"></button>
+        <button class="nav-dot" data-target="about-section" data-title="About"></button>
+        <button class="nav-dot" data-target="lovely-section" data-title="Lovely"></button> 
+        <button class="nav-dot" data-target="map-section" data-title="Hong Kong"></button> 
+        <button class="nav-dot" data-target="visited-places-section" data-title="World"></button> <button class="nav-dot" data-target="contact-section" data-title="Contact"></button>
+    </div>
+
+    <div id="content-wrapper">
+        
+        <section id="hero-section" class="content-block">
+            <h1>👋 Hello！ 您好！</h1>
+            <div id="runner-game-container">
+                <canvas id="runnerCanvas" width="300" height="150"></canvas>
+                <div id="game-info">
+                    <p class="score-display">Highest Score: <span id="highScore">0</span> | Score: <span id="currentScore">0</span></p>
+                </div>
+            </div>
+            
+            <i class="fas fa-chevron-down scroll-hint"></i>
+        </section>
+
+        <section id="about-section" class="content-block">
+            <div class="card glass-card sticky-card" title="About">
+                <h2>👤 About.</h2>
+                <p>I'm a Homo sapiens born and raised in Hong Kong. I also spent a year studying in the UK and semesters in the US and France, experiences that opened my mind and shaped how I see the world.</p>
+                <p>Before university, I was that kid obsessed with biology and completely hooked on the Olympiad. I loved exploring the mysteries of life. But after countless hours pipetting in the lab, I started to feel burnt out. I realized I loved biology, just not the endless wet lab work.</p>
+				<p>At the same time, I discovered the beauty and speed of simulations, where you can explore complex systems without spilling a single drop. One day, I had a lightbulb moment: “What if I could use math and code to solve big biology questions instead?” That idea completely changed my path.</p>
+				<p>And so, here I am, merging my love for biology with the power of math and computation.</p>
+				<p>When I'm not coding or solving equations, you'll find me kayaking, playing tennis, or on a mission to hunt down the best ramen and handmade pasta in Hong Kong (I might have tried them all by now). And when it comes to boba, it's always “No.1” at Comebuytea.</p>
+            </div>
+            <div class="push-space"></div>
+        </section>
+
+        <section id="lovely-section" class="content-block">
+            <div class="card glass-card sticky-card" title="Lovely">
+                <h2>❤️ Lovely Moments.</h2>
+                <div class="photo-gallery">
+                    <div class="photo-item">
+                        <img src="https://cdn.petcarerx.com/LPPE/images/articlethumbs/F944480742_photo-1507146426996-ef05306b995a.jpg" alt="Lovely Photo 1" class="round-photo">
+                        <p class="photo-caption">Bibi</p>
+                    </div>
+                    <div class="photo-item">
+                        <img src="https://schertzanimalhospital.com/wp-content/uploads/2017/12/Schertz_iStock-590055188-1024x682.jpg" alt="Lovely Photo 2" class="round-photo">
+                        <p class="photo-caption">Muimui</p>
+                    </div>
+                </div>
+                <p style="text-align: center; margin-top: 20px;">They are my favorite little buddies, and I love capturing their precious moments through photos every day.</p>
+            </div>
+            <div class="push-space"></div>
+        </section>
+        
+        <section id="map-section" class="content-block">
+            <div class="card glass-card sticky-card" title="Hong Kong">
+                <h2>📍 Best Parts of Hong Kong.</h2>
+                <iframe style="width: 100%; height: 400px; border: 0;" 
+                        allowfullscreen 
+                        allow="geolocation" 
+                        src="https://umap.openstreetmap.de/zh-tw/map/relax-place_115203?scaleControl=false&miniMap=false&scrollWheelZoom=false&zoomControl=true&editMode=disabled&moreControl=false&searchControl=null&tilelayersControl=null&embedControl=null&datalayersControl=null&onLoadPanel=none&captionBar=false&captionMenus=false&datalayers=804a1c26-baaa-458e-97c3-2494c13ffa80&homeControl=false&fullscreenControl=null&captionControl=null#10/22.3507/114.1026">
+                </iframe>
+                <p style="margin-top: 15px; text-align: center;">A collection of my favorite spots and activities in the city I call home.</p>
+            </div>
+            <div class="push-space"></div>
+        </section>
+        
+        <section id="visited-places-section" class="content-block">
+            <div class="card glass-card sticky-card" title="World">
+                <h2>🌍 World Map.</h2>
+                <script>
+                // VisitedPlaces.com code
+                var visitedplaces_config = {
+                    "map": "world",
+                    "projection": "geoOrthographic",
+                    "theme": "light-blue",
+                    "water": 1,
+                    "graticule": 1,
+                    "names": 0,
+                    "duration": 2000,
+                    "slider": 0,
+                    "autoplay": 0,
+                    "autozoom": "none",
+                    "data": [
+                        {
+                            "places": [
+                                "CN",
+                                "HK",
+                                "ID",
+                                "JP",
+                                "MO",
+                                "KR",
+                                "TW",
+                                "TH",
+                                "VN",
+                                "PH"
+                            ],
+                            "text": "Asia",
+                            "position": {
+                                "geoPoint": {
+                                    "longitude": 113.8,
+                                    "latitude": 23.3
+                                },
+                                "rotationX": -113.8,
+                                "rotationY": -23.3,
+                                "zoomLevel": 1.5
+                            },
+                            "colors": {}
+                        }
+                    ],
+                    "home": "HK"
+                };
+                </script>
+                <div id="chartdiv" style="width: 100%; height: 400px;"></div>
+                <p style="margin-top: 15px; text-align: center;">A visual representation of the places I've been to.</p>
+            </div>
+            <div class="push-space"></div>
+        </section>
+		
+		<section id="contact-section" class="content-block">
+            <div class="card glass-card sticky-card">
+                <h2>📞 Get in Touch.</h2>
+                
+                <p>Want to chat? Feel free to reach out via email or social media platform and I'll respond whenever I can.</p>
+                
+                <div class="contact-icons-row">
+                    <a href="mailto:hidden@gmail.com" target="_blank">
+                        <i class="fa-solid fa-at"></i>
+                    </a>
+                    
+                    <a href="https://www.instagram.com/7lv" target="_blank">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    
+                    <a href="https://www.threads.net/@7lv" target="_blank">
+                        <i class="fab fa-threads"></i>
+                    </a>
+                </div>
+                
+                <div class="coming-soon-icons-row">
+                    <i class="fa-brands fa-whatsapp" title="WhatsApp"></i>
+                    <i class="fa-brands fa-line" title="LINE"></i>
+                    <i class="fa-brands fa-telegram" title="Telegram"></i>
+                    <i class="fa-brands fa-facebook" title="Facebook"></i>
+                    <i class="fa-brands fa-youtube" title="YouTube"></i>
+                    <i class="fa-brands fa-x-twitter" title="X / Twitter"></i>
+                </div>
+                </div>
+            <div class="push-space"></div>
+        </section>
+        
+    </div> 
+    
+<div id="dock">
+        <button id="go-home" class="dock-icon" title="Home">
+            <i class="fas fa-home"></i>
+        </button>
+        <a id="instagram-link" href="https://www.instagram.com/7lv" target="_blank" class="dock-icon" title="Instagram">
+            <i class="fab fa-instagram"></i>
+        </a>
+        <a id="threads-link" href="https://www.threads.net/@7lv" target="_blank" class="dock-icon" title="Threads">
+            <i class="fab fa-threads"></i>
+        </a>
+        <button id="toggle-effect" class="dock-icon" title="Effect">
+            <i class="fas fa-magic"></i>
+        </button>
+        <button id="toggle-mode" class="dock-icon" title="Mode">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
+    <script src="https://kit.fontawesome.com/20ed08f79a.js" crossorigin="anonymous"></script> 
+    
+    <script src="https://www.visitedplaces.com/js/common.js"></script>
+    <script src="https://www.visitedplaces.com/js/viewer.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
