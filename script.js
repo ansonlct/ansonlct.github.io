@@ -523,30 +523,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------
     function initCubeInteraction() {
         const cube = document.getElementById('cube');
-        const container = document.getElementById('about-section'); // 容器改為 about-section
+        const container = document.getElementById('about-section');
         const cubeContainer = document.getElementById('cube-container');
-        if (!cube || !container || !!cubeContainer) return;
         
-        const influenceRadius = 150; // 感應半徑 (用於滑鼠靠近時的物理感應)
+        // ⚡️ 修正 1: 邏輯錯誤修正為 !cubeContainer
+        if (!cube || !container || !cubeContainer) return; 
+        
+        const influenceRadius = 150; 
         
         let currentRotateX = 0;
         let currentRotateY = 0;
         
         let autoRotateId = null;
         let isInteracting = false; 
-        let isDragging = false;    // 適用於滑鼠拖動
-        let isTouching = false;    // ⚡️ 新增: 適用於觸控拖動
+        let isDragging = false;    
+        let isTouching = false;    
         let lastX = 0;             
         let lastY = 0;             
+
+        // ... (updateRotation, autoRotateLoop, startAutoRotation, stopAutoRotation 函式不變)
 
         function updateRotation() {
             cube.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
         }
 
-        // ... (autoRotateLoop 和 start/stopAutoRotation 函式不變)
-
         function startAutoRotation() {
-            // 停止 CSS 動畫 (如果有的話)
             cube.style.animation = 'none';
             if (autoRotateId === null) {
                 lastTime = 0;
@@ -560,9 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 autoRotateId = null;
             }
         }
-        
+
         // ----------------------------------------
-        // ⚡️ 1. 滑鼠事件 (不變)
+        // 1. 滑鼠事件 
         // ----------------------------------------
         
         // 1.1. 滑鼠按下事件 (在立方體容器上觸發)
@@ -588,57 +589,63 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1.3. 監聽滑鼠移動 (拖動和靠近感應)
         container.addEventListener('mousemove', (e) => {
             
-            if (isDragging) {
-                // 模式 A: 點擊拖動 (優先)
-                const deltaX = e.clientX - lastX;
-                const deltaY = e.clientY - lastY;
-                
-                currentRotateY += deltaX * 0.5; 
-                currentRotateX += deltaY * 0.5; 
+            // ⚡️ 修正 2a: 如果正在拖動或正在觸控，則優先處理，不執行靠近感應
+            if (isDragging || isTouching) { 
+                if (isDragging) {
+                    // 模式 A: 點擊拖動
+                    const deltaX = e.clientX - lastX;
+                    const deltaY = e.clientY - lastY;
+                    
+                    currentRotateY += deltaX * 0.5; 
+                    currentRotateX += deltaY * 0.5; 
 
-                updateRotation();
-                
-                lastX = e.clientX;
-                lastY = e.clientY;
-                
+                    updateRotation();
+                    
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                }
                 return; 
             } 
             
-            // 模式 B: 靠近感應 (略)
-            const cubeRect = cubeContainer.getBoundingClientRect();
-            const cubeCenterX = cubeRect.left + cubeRect.width / 2;
-            const cubeCenterY = cubeRect.top + cubeRect.height / 2;
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
+            // ⚡️ 修正 2b: 僅在非觸控裝置上執行靠近感應
+            if (!('ontouchstart' in window)) { 
+                
+                // 模式 B: 靠近感應
+                const cubeRect = cubeContainer.getBoundingClientRect();
+                const cubeCenterX = cubeRect.left + cubeRect.width / 2;
+                const cubeCenterY = cubeRect.top + cubeRect.height / 2;
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
 
-            const distance = Math.sqrt(
-                Math.pow(mouseX - cubeCenterX, 2) + Math.pow(mouseY - cubeCenterY, 2)
-            );
-            
-            if (distance < influenceRadius) {
-                isInteracting = true;
-                stopAutoRotation();
-                cube.style.animation = 'none';
+                const distance = Math.sqrt(
+                    Math.pow(mouseX - cubeCenterX, 2) + Math.pow(mouseY - cubeCenterY, 2)
+                );
+                
+                if (distance < influenceRadius) {
+                    isInteracting = true;
+                    stopAutoRotation();
+                    cube.style.animation = 'none';
 
-                const deltaX = e.movementX || 0;
-                const deltaY = e.movementY || 0;
+                    const deltaX = e.movementX || 0;
+                    const deltaY = e.movementY || 0;
 
-                currentRotateY += deltaX * 0.5; 
-                currentRotateX -= deltaY * 0.5; 
+                    currentRotateY += deltaX * 0.5; 
+                    currentRotateX -= deltaY * 0.5; 
 
-                updateRotation();
+                    updateRotation();
 
-            } else {
-                if (isInteracting) {
-                    isInteracting = false;
-                    startAutoRotation();
+                } else {
+                    if (isInteracting) {
+                        isInteracting = false;
+                        startAutoRotation();
+                    }
                 }
             }
         });
 
         // 1.4. 滑鼠離開整個區域時確保恢復自動旋轉
         container.addEventListener('mouseleave', () => {
-            if (!isDragging) { 
+            if (!isDragging && !isTouching) { // 確保當滑鼠拖動或觸控離開時，不觸發此處邏輯
                 isInteracting = false;
                 startAutoRotation();
             }
@@ -646,12 +653,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         // ----------------------------------------
-        // ⚡️ 2. 觸控事件 (新增部分)
+        // 2. 觸控事件 
         // ----------------------------------------
 
         // 2.1. 觸摸開始 (Touch Start)
         cubeContainer.addEventListener('touchstart', (e) => {
-            // 僅處理單指觸控
             if (e.touches.length === 1) { 
                 e.preventDefault(); 
                 
@@ -663,11 +669,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastX = e.touches[0].clientX;
                 lastY = e.touches[0].clientY;
             }
-        }, { passive: false }); // 設置 passive: false 以允許 preventDefault()
+        }, { passive: false }); 
 
         // 2.2. 觸摸移動 (Touch Move)
-        cubeContainer.addEventListener('touchmove', (e) => {
+        // ⚡️ 修正 3: 將監聽器移動到 container，提供更大的拖動範圍
+        container.addEventListener('touchmove', (e) => { 
             if (isTouching && e.touches.length === 1) {
+                
+                // 檢查 touchmove 是否發生在 about-section 內，但我們用 isTouching 來控制
                 e.preventDefault();
 
                 const currentX = e.touches[0].clientX;
@@ -676,7 +685,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const deltaX = currentX - lastX;
                 const deltaY = currentY - lastY;
                 
-                // 觸控邏輯與滑鼠拖動邏輯相同
                 currentRotateY += deltaX * 0.5; 
                 currentRotateX += deltaY * 0.5; 
 
@@ -685,13 +693,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastX = currentX;
                 lastY = currentY;
             }
-        }, { passive: false }); // 設置 passive: false 以允許 preventDefault()
+        }, { passive: false }); 
 
         // 2.3. 觸摸結束 (Touch End)
         document.addEventListener('touchend', () => {
             if (isTouching) {
                 isTouching = false;
-                // 觸控結束後，恢復自動旋轉
                 startAutoRotation(); 
             }
         });
@@ -699,10 +706,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // 初始啟動
         startAutoRotation(); 
     }
-
+    
     // --- 程式初始化 ---
     initDockEffect();
     initSideNavigation(); // ⚡️ 啟用導航點
     initRunnerGame();
     initCubeInteraction(); // ⚡️ 啟用 3D 立方體互動
 });
+
