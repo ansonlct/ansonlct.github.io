@@ -772,3 +772,92 @@ h2 {
     50% { opacity: 0.8; }
     100% { opacity: 0.3; }
 }
+
+/*
+=========================================================
+9. 3D 立方體樣式與動畫
+=========================================================
+*/
+#cube-container {
+    perspective: 800px; /* 設定 3D 視角 */
+    width: 60px; /* 小小的一個 */
+    height: 60px;
+    margin: 40px auto 20px; /* 置中並增加上下間距 */
+}
+
+#cube {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease-out; /* 旋轉變化的平滑過渡 */
+    /* 初始狀態，由 JS 控制動畫/旋轉，這裡的 CSS keyframes 僅作為參考 */
+    animation: auto-rotate 10s linear infinite; 
+}
+
+/* 自動向左慢轉動畫 */
+@keyframes auto-rotate {
+    0% { transform: rotateY(0deg); } 
+    100% { transform: rotateY(-360deg); } /* 向左轉 (Y 軸負方向) */
+}
+
+#cube div {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    opacity: 0.4;
+    background-color: var(--text-color); /* 使用文字色作為基礎顏色 */
+    border: 1px solid var(--icon-color);
+}
+
+/* 立方體的六個面 */
+#cube div:nth-child(1) { 
+    transform: rotateY(0deg) translateZ(30px); /* Front */
+    background-color: var(--particle-color-1); 
+}
+#cube div:nth-child(2) { 
+    transform: rotateY(180deg) translateZ(30px); /* Back */
+    background-color: var(--particle-color-2);
+}
+#cube div:nth-child(3) { 
+    transform: rotateY(90deg) translateZ(30px); /* Right */
+    background-color: var(--particle-color-3);
+}
+#cube div:nth-child(4) { 
+    transform: rotateY(-90deg) translateZ(30px); /* Left */
+    background-color: var(--particle-color-4);
+}
+#cube div:nth-child(5) { 
+    transform: rotateX(90deg) translateZ(30px); /* Top */
+    background-color: var(--text-color);
+}
+#cube div:nth-child(6) { 
+    transform: rotateX(-90deg) translateZ(30px); /* Bottom */
+    background-color: var(--text-color);
+}
+
+/*
+=========================================================
+10. 揮手動畫效果
+=========================================================
+*/
+.waving-hand {
+    /* 確保可以單獨設定 transform 屬性 */
+    display: inline-block;
+    
+    /* 將旋轉中心設置在右下角 (75% 75%)，模擬手腕的位置 */
+    transform-origin: 75% 75%; 
+    
+    /* 應用揮手動畫：持續 2.5 秒，無限重複 */
+    animation: wave 2.5s infinite;
+}
+
+@keyframes wave {
+    0% { transform: rotate( 0.0deg) }   /* 開始：手腕靜止 */
+    15% { transform: rotate( 14.0deg) } /* 第一次向外 (右) 揮動 */
+    30% { transform: rotate(-8.0deg) }  /* 向內 (左) 揮動 */
+    45% { transform: rotate( 14.0deg) } /* 第二次向外 (右) 揮動 */
+    60% { transform: rotate(-4.0deg) }  
+    75% { transform: rotate( 8.0deg) }
+    100% { transform: rotate( 0.0deg) } /* 結束：回到靜止，開始下一個循環 */
+}
