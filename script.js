@@ -518,27 +518,29 @@ document.addEventListener('DOMContentLoaded', () => {
         drawInitialState();
     }
     
-// ----------------------------------------------------------------
-    // --- 6. 3D 立方體互動邏輯 (精簡且穩定版：純拖動 + 觸控) ---
+    // ----------------------------------------------------------------
+    // --- 6. 3D 立方體互動邏輯 (物理速度版 + 點擊拖動) ---
     // ----------------------------------------------------------------
     function initCubeInteraction() {
         const cube = document.getElementById('cube');
-        // 根據您提供的檔案，容器 ID 設為 'contact-section'
-        const container = document.getElementById('contact-section'); 
+        const container = document.getElementById('contact-section');
         const cubeContainer = document.getElementById('cube-container');
         if (!cube || !container || !cubeContainer) return;
+        
+        const influenceRadius = 150; // 感應半徑 (用於滑鼠靠近時的物理感應)
         
         let currentRotateX = 0;
         let currentRotateY = 0;
         
         let autoRotateId = null;
-        let isDragging = false;    // 滑鼠拖動狀態
-        let isTouching = false;    // 觸控滑動狀態
-        let lastX = 0;             
-        let lastY = 0;             
+        let isInteracting = false; // 紀錄滑鼠是否在感應圈內 (用於 hover 效果)
+        let isDragging = false;    // 紀錄滑鼠是否按住 (用於 click and drag)
+        let lastX = 0;             // 紀錄拖動時的上一個 X 座標
+        let lastY = 0;             // 紀錄拖動時的上一個 Y 座標
 
+        // 自動旋轉相關變數
         let lastTime = 0;
-        const autoRotateSpeed = -0.1; // 自動旋轉速度
+        const autoRotateSpeed = -0.1; // 自動向左慢轉速度
 
         function updateRotation() {
             cube.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
@@ -546,12 +548,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 自動旋轉迴圈
         function autoRotateLoop(timestamp) {
-            // 只有在沒有拖動、且沒有觸控時才自動轉
-            if (!isDragging && !isTouching) { 
+            // 只有在沒有互動且沒有拖動時才自動轉
+            if (!isInteracting && !isDragging) { 
                 if (!lastTime) lastTime = timestamp;
                 const deltaTime = timestamp - lastTime;
                 lastTime = timestamp;
 
+                // 自動向左轉 (Y軸持續減少)
                 currentRotateY += autoRotateSpeed * (deltaTime / 16.67);
                 
                 updateRotation();
@@ -562,6 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function startAutoRotation() {
+            // 停止 CSS 動畫 (如果有的話)
             cube.style.animation = 'none';
             if (autoRotateId === null) {
                 lastTime = 0;
@@ -576,105 +580,102 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // ----------------------------------------
-        // 1. 滑鼠事件 (Mouse) - 在 document 上監聽移動/放開
-        // ----------------------------------------
-        
-        // 1.1. 按下 (在 cubeContainer 上啟動拖動)
+        // 1. 滑鼠按下事件 (在立方體容器上觸發)
         cubeContainer.addEventListener('mousedown', (e) => {
             e.preventDefault(); 
+            
+            // 阻止 hover 效果邏輯運行
+            isInteracting = false; 
             stopAutoRotation();
+            cube.style.animation = 'none';
 
             isDragging = true;
             lastX = e.clientX;
             lastY = e.clientY;
         });
 
-        // 1.2. 移動 (在 document 上監聽，防止拖動中斷)
-        document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const deltaX = e.clientX - lastX;
-                const deltaY = e.clientY - lastY;
-                
-                // 左右移動轉 Y 軸
-                currentRotateY += deltaX * 0.5; 
-                // 上下移動轉 X 軸
-                currentRotateX += deltaY * 0.5; 
-
-                updateRotation();
-                
-                lastX = e.clientX;
-                lastY = e.clientY;
-            }
-        });
-
-        // 1.3. 放開 (在 document 上結束拖動)
+        // 2. 滑鼠放開事件 (在文件上觸發，確保拖到畫布外也能停止)
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
+                // 拖動結束後，立即啟動自動旋轉
                 startAutoRotation(); 
             }
         });
 
+        // 3. 監聽滑鼠移動 (同時處理拖動和靠近感應)
+        container.addEventListener('mousemove', (e) => {
+            
+            if (isDragging) {
+                // 模式 A: 點擊拖動 (優先)
+                const deltaX = e.clientX - lastX;
+                const deltaY = e.clientY - lastY;
+                
+                // 乘數 0.5 決定了旋轉的靈敏度
+                currentRotateY += deltaX * 0.5; // 左右移動轉 Y 軸 (拖動方向正確)
+                // ⚡️ 關鍵修正：將負號改為正號，實現物理抓取感 (向下拉動時，方塊向上翻)
+                currentRotateX += deltaY * 0.5; // 上下移動轉 X 軸 
 
-        // ----------------------------------------
-        // 2. 觸控事件 (Touch) - 在 document 上監聽滑動/結束
-        // ----------------------------------------
+                updateRotation();
+                
+                // 更新位置
+                lastX = e.clientX;
+                lastY = e.clientY;
+                
+                return; // 拖動模式下，不執行下面的靠近感應邏輯
+            } 
+            
+            // 模式 B: 靠近感應 (只有在沒有拖動時才執行)
+            const cubeRect = cubeContainer.getBoundingClientRect();
+            const cubeCenterX = cubeRect.left + cubeRect.width / 2;
+            const cubeCenterY = cubeRect.top + cubeRect.height / 2;
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
 
-        // 2.1. 觸摸開始 (Touch Start) - 僅在方塊上啟動
-        cubeContainer.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) { 
-                e.preventDefault(); 
+            // 計算距離
+            const distance = Math.sqrt(
+                Math.pow(mouseX - cubeCenterX, 2) + Math.pow(mouseY - cubeCenterY, 2)
+            );
+            
+            if (distance < influenceRadius) {
+                // --- 進入感應範圍 ---
+                isInteracting = true;
                 stopAutoRotation();
+                cube.style.animation = 'none';
 
-                isTouching = true;
-                lastX = e.touches[0].clientX;
-                lastY = e.touches[0].clientY;
-            }
-        }, { passive: false }); // passive: false 確保 e.preventDefault() 生效
+                // 物理旋轉邏輯（使用 movementX/Y 的速度感應）
+                const deltaX = e.movementX || 0;
+                const deltaY = e.movementY || 0;
 
-        // 2.2. 觸摸移動 (Touch Move) - 在 document 上監聽，防止滑動中斷
-        document.addEventListener('touchmove', (e) => { 
-            if (isTouching && e.touches.length === 1) {
-                
-                e.preventDefault(); // 阻止瀏覽器滾動
-
-                const currentX = e.touches[0].clientX;
-                const currentY = e.touches[0].clientY;
-                
-                const deltaX = currentX - lastX;
-                const deltaY = currentY - lastY;
-                
-                // 左右滑動控制 Y 軸旋轉 (手指右滑 deltaX > 0，方塊右轉)
                 currentRotateY += deltaX * 0.5; 
-                // 上下滑動控制 X 軸旋轉
-                currentRotateX += deltaY * 0.5; 
+                currentRotateX -= deltaY * 0.5; // 這裡保留鏡頭視角，因為它是基於速度/慣性的
 
                 updateRotation();
 
-                lastX = currentX;
-                lastY = currentY;
-            }
-        }, { passive: false }); 
-
-        // 2.3. 觸摸結束 (Touch End) - 在 document 上結束
-        document.addEventListener('touchend', () => {
-            if (isTouching) {
-                isTouching = false;
-                startAutoRotation(); 
+            } else {
+                // --- 離開感應範圍 ---
+                if (isInteracting) {
+                    isInteracting = false;
+                    startAutoRotation();
+                }
             }
         });
-        
+
+        // 4. 滑鼠離開整個區域時確保恢復自動旋轉 (僅處理非拖動狀態的離開)
+        container.addEventListener('mouseleave', () => {
+            if (!isDragging) { // 確保當滑鼠拖動離開時，不觸發此處邏輯
+                isInteracting = false;
+                startAutoRotation();
+            }
+        });
+
         // 初始啟動
         startAutoRotation(); 
     }
-    
+
     // --- 程式初始化 ---
     initDockEffect();
     initSideNavigation(); // ⚡️ 啟用導航點
     initRunnerGame();
     initCubeInteraction(); // ⚡️ 啟用 3D 立方體互動
 });
-
-
-
