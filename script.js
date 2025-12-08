@@ -523,11 +523,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------
     function initCubeInteraction() {
         const cube = document.getElementById('cube');
-        const container = document.getElementById('about-section');
+        // ⚡️ 修正 1: 將容器改為 cube 實際所在位置 #about-section
+        const container = document.getElementById('about-section'); 
         const cubeContainer = document.getElementById('cube-container');
-        
-        // ⚡️ 修正 1: 邏輯錯誤修正為 !cubeContainer
-        if (!cube || !container || !cubeContainer) return; 
+        if (!cube || !container || !cubeContainer) return;
         
         const influenceRadius = 150; 
         
@@ -537,14 +536,33 @@ document.addEventListener('DOMContentLoaded', () => {
         let autoRotateId = null;
         let isInteracting = false; 
         let isDragging = false;    
+        // ⚡️ 新增: 追蹤觸控狀態
         let isTouching = false;    
         let lastX = 0;             
         let lastY = 0;             
 
-        // ... (updateRotation, autoRotateLoop, startAutoRotation, stopAutoRotation 函式不變)
+        // 自動旋轉相關變數
+        let lastTime = 0;
+        const autoRotateSpeed = -0.1; 
 
         function updateRotation() {
             cube.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+        }
+
+        function autoRotateLoop(timestamp) {
+            // 只有在沒有互動、沒有拖動、且沒有觸控時才自動轉
+            if (!isInteracting && !isDragging && !isTouching) { 
+                if (!lastTime) lastTime = timestamp;
+                const deltaTime = timestamp - lastTime;
+                lastTime = timestamp;
+
+                currentRotateY += autoRotateSpeed * (deltaTime / 16.67);
+                
+                updateRotation();
+                autoRotateId = requestAnimationFrame(autoRotateLoop);
+            } else {
+                lastTime = 0; 
+            }
         }
 
         function startAutoRotation() {
@@ -563,10 +581,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ----------------------------------------
-        // 1. 滑鼠事件 
+        // 1. 滑鼠事件 (MouseEvent)
         // ----------------------------------------
         
-        // 1.1. 滑鼠按下事件 (在立方體容器上觸發)
+        // 1.1. 滑鼠按下事件
         cubeContainer.addEventListener('mousedown', (e) => {
             e.preventDefault(); 
             isInteracting = false; 
@@ -578,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lastY = e.clientY;
         });
 
-        // 1.2. 滑鼠放開事件 (在文件上觸發)
+        // 1.2. 滑鼠放開事件
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
@@ -586,17 +604,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 1.3. 監聽滑鼠移動 (拖動和靠近感應)
+        // 1.3. 監聽滑鼠移動
         container.addEventListener('mousemove', (e) => {
             
-            // ⚡️ 修正 2a: 如果正在拖動或正在觸控，則優先處理，不執行靠近感應
+            // 如果正在拖動或正在觸控，則優先處理，不執行靠近感應
             if (isDragging || isTouching) { 
                 if (isDragging) {
                     // 模式 A: 點擊拖動
                     const deltaX = e.clientX - lastX;
                     const deltaY = e.clientY - lastY;
                     
+                    // 左右移動轉 Y 軸 (右移 deltaX > 0 -> 右轉)
                     currentRotateY += deltaX * 0.5; 
+                    // 上下移動轉 X 軸 
                     currentRotateX += deltaY * 0.5; 
 
                     updateRotation();
@@ -607,10 +627,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return; 
             } 
             
-            // ⚡️ 修正 2b: 僅在非觸控裝置上執行靠近感應
+            // 模式 B: 靠近感應 (僅限非觸控裝置)
             if (!('ontouchstart' in window)) { 
                 
-                // 模式 B: 靠近感應
                 const cubeRect = cubeContainer.getBoundingClientRect();
                 const cubeCenterX = cubeRect.left + cubeRect.width / 2;
                 const cubeCenterY = cubeRect.top + cubeRect.height / 2;
@@ -643,9 +662,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 1.4. 滑鼠離開整個區域時確保恢復自動旋轉
+        // 1.4. 滑鼠離開整個區域
         container.addEventListener('mouseleave', () => {
-            if (!isDragging && !isTouching) { // 確保當滑鼠拖動或觸控離開時，不觸發此處邏輯
+            if (!isDragging && !isTouching) {
                 isInteracting = false;
                 startAutoRotation();
             }
@@ -653,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         // ----------------------------------------
-        // 2. 觸控事件 
+        // 2. 觸控事件 (TouchEvent)
         // ----------------------------------------
 
         // 2.1. 觸摸開始 (Touch Start)
@@ -671,12 +690,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, { passive: false }); 
 
-        // 2.2. 觸摸移動 (Touch Move)
-        // ⚡️ 修正 3: 將監聽器移動到 container，提供更大的拖動範圍
+        // 2.2. 觸摸移動 (Touch Move) - 監聽範圍擴大到 container
         container.addEventListener('touchmove', (e) => { 
             if (isTouching && e.touches.length === 1) {
                 
-                // 檢查 touchmove 是否發生在 about-section 內，但我們用 isTouching 來控制
                 e.preventDefault();
 
                 const currentX = e.touches[0].clientX;
@@ -685,7 +702,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const deltaX = currentX - lastX;
                 const deltaY = currentY - lastY;
                 
+                // ⚡️ 核心修正: 左右滑動控制 Y 軸旋轉
                 currentRotateY += deltaX * 0.5; 
+                // 上下滑動控制 X 軸旋轉
                 currentRotateX += deltaY * 0.5; 
 
                 updateRotation();
@@ -713,4 +732,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initRunnerGame();
     initCubeInteraction(); // ⚡️ 啟用 3D 立方體互動
 });
+
 
