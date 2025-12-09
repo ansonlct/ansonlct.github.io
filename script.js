@@ -1,681 +1,886 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const body = document.body;
-    const toggleModeButton = document.getElementById('toggle-mode');
-    const toggleEffectButton = document.getElementById('toggle-effect');
-    const goHomeButton = document.getElementById('go-home'); 
-    const effectContainer = document.getElementById('effect-container');
-    const navDots = document.querySelectorAll('.nav-dot');
+/*
+=========================================================
+1. 基礎設定與變數 (日夜模式)
+=========================================================
+*/
+:root {
+    /* 變數: 日間模式 (預設) */
+    --main-bg: #f5f5f5;
+    --text-color: #333;
+    --dock-bg: rgba(255, 255, 255, 0.25);
+    --icon-color: #000;
+    --card-bg: rgba(255, 255, 255, 0.5); /* 日間卡片 */
+    --glass-border: rgba(255, 255, 255, 0.4);
     
-// --- 0. Dock 特效初始化 ---
-    function initDockEffect() {
-        const dock = document.getElementById('dock'); // ⚡️ 取得 Dock 容器
-        const dockIcons = document.querySelectorAll('#dock > *');
-        
-        // 集中管理所有圖標的縮放和 Tooltip 狀態
-        function resetScale() {
-            dockIcons.forEach(i => {
-                i.style.transform = 'scale(1)';
-                i.removeAttribute('data-show'); // ⚡️ 關鍵：移除 data-show 屬性來隱藏 Tooltip
-            });
-        }
+    /* 遊戲相關變數 */
+    --game-bg: rgba(255, 255, 255, 0.6); 
+    --game-canvas-bg: #f5f5f5; /* 畫布背景 */
+    --game-line-color: #aaa; /* 地面線條 */
+    --game-element-color: #333; /* 玩家/障礙物 */
+    --game-shadow-color: rgba(0, 0, 0, 0.1);
 
-        dockIcons.forEach(icon => {
-            
-            icon.addEventListener('mouseenter', () => {
-                
-                // 1. 確保滑鼠進入新圖標時，先重置其他圖標的狀態
-                resetScale(); 
-                
-                // 2. 設置懸停圖標的提示框顯示和放大
-                icon.setAttribute('data-show', 'true'); // 顯示 Tooltip
-                icon.style.transform = 'scale(1.4)'; // 懸停圖標放大
-                
-                // 3. 獲取前後圖標並進行較小幅度的放大
-                const prevIcon = icon.previousElementSibling;
-                const nextIcon = icon.nextElementSibling;
-                
-                // 檢查是否為有效的 dock-icon
-                if (prevIcon && prevIcon.classList.contains('dock-icon')) {
-                    prevIcon.style.transform = 'scale(1.2)';
-                }
+    /* ⚡️ 新增: 日間模式 - 糖果色微粒 */
+    --particle-color-1: #FFC0CB; /* 粉紅 (Pink) */
+    --particle-color-2: #87CEFA; /* 淺藍 (Light Sky Blue) */
+    --particle-color-3: #98FB98; /* 淺綠 (Pale Green) */
+    --particle-color-4: #FFD700; /* 金色 (Gold/Yellow) */
 
-                if (nextIcon && nextIcon.classList.contains('dock-icon')) {
-                    nextIcon.style.transform = 'scale(1.2)';
-                }
-            });
-        });
-        
-        // ⚡️ 關鍵修正：當滑鼠離開整個 Dock 容器時，統一清除所有效果
-        if (dock) {
-            dock.addEventListener('mouseleave', resetScale);
-        }
+    /* ⚡️ 新增: 日間模式 - 特效按鈕啟動時的顏色 */
+    --effect-active-bg: rgba(255, 192, 203, 0.5); /* 淡粉色半透明背景 */
+    --effect-active-glow: #FFC0CB; /* 粉色發光 */
+}
+
+.dark-mode {
+    /* 變數: 夜間模式 */
+    --main-bg: #1e1e1e;
+    --text-color: #eee;
+    --dock-bg: rgba(0, 0, 0, 0.4);
+    --icon-color: #fff;
+    --card-bg: rgba(0, 0, 0, 0.6); /* 夜間卡片 */
+    --glass-border: rgba(255, 255, 255, 0.2);
+
+    /* 遊戲相關變數 */
+    --game-bg: rgba(0, 0, 0, 0.7);
+    --game-canvas-bg: #2d2d2d; 
+    --game-line-color: #666; 
+    --game-element-color: #fff; 
+    --game-shadow-color: rgba(255, 255, 255, 0.1);
+
+    /* ⚡️ 新增: 夜間模式 - 白色微粒 */
+    --particle-color-1: #fff;
+    --particle-color-2: #fff;
+    --particle-color-3: #fff;
+    --particle-color-4: #fff;
+
+    /* ⚡️ 新增: 夜間模式 - 特效按鈕啟動時的顏色 */
+    --effect-active-bg: rgba(135, 206, 250, 0.3); /* 淡藍色半透明背景 */
+    --effect-active-glow: #87CEFA; /* 淺藍色發光 */
+}
+
+/*
+=========================================================
+2. 全域排版與背景
+=========================================================
+*/
+body {
+    /* ⚡️ 修正: 將字型統一為 Arial */
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.3; /* 行距 */
+    background-color: var(--main-bg);
+    color: var(--text-color);
+    transition: background-color 0.5s, color 0.5s;
+}
+
+h1, h2 {
+    color: var(--text-color);
+    transition: color 0.5s;
+    text-align: center;
+}
+
+/* ⚡️ 修正: 卡片標題文字變大 */
+h2 {
+    font-size: 2.2em; /* 增大字體大小 */
+    line-height: 1.2; /* 調整行高 */
+    margin-top: 0.5em; 
+    margin-bottom: 0.5em; /* 調整下邊距 */
+}
+
+/* ⚡️ 新增: 縮小卡片內的內文和列表文字 */
+.card p,
+.card ul li {
+    font-size: 0.95em;
+}
+
+
+#background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(133, 193, 233, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(247, 220, 111, 0.2) 0%, transparent 40%);
+    background-size: cover;
+    z-index: -1;
+    pointer-events: none;
+    transition: background-color 0.5s; 
+}
+
+/* 內容容器，用於居中和控制最大寬度 */
+#content-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 每個內容區塊的基礎設定 */
+.content-block {
+    min-height: 100vh; /* 確保區塊夠高，讓卡片有滾動空間 */
+    padding-top: 5vh;
+    padding-bottom: 5vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 僅 Home 區塊需置中對齊 */
+#hero-section {
+    align-items: center;
+    text-align: center;
+}
+
+/* 滾動提示箭頭 */
+.scroll-hint {
+    margin-top: 50px;
+    font-size: 2em;
+    animation: bounce 2s infinite;
+    opacity: 0.5;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
     }
-
-// --- 1. 模式切換 ---
-    if (toggleModeButton) {
-        toggleModeButton.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-        });
+    40% {
+        transform: translateY(-10px);
     }
+    60% {
+        transform: translateY(-5px);
+    }
+}
 
-    // --- 2. 星光微粒特效邏輯 (包含糖果色修正) ---
-    let effectActive = false;
-    let particleInterval; 
+/*
+=========================================================
+3. 卡片與視覺效果 (Glass Card)
+=========================================================
+*/
+.card {
+    padding: 30px;
+    /* 確保卡片有固定寬度並居中，與之前的討論一致 */
+    width: 600px; 
+    max-width: 90%; 
+    margin: 30px auto; 
     
-    // ⚡️ 修正: 新增 isImmediate 參數，用於控制動畫延遲
-    function createParticle(isImmediate = false) {
-        const particle = document.createElement('div');
-        particle.classList.add('star-particle'); 
-        
-        // 隨機初始位置
-        particle.style.left = Math.random() * 100 + 'vw';
-        // 修正: 將 top 設置為負值，確保微粒從視窗頂部以外生成
-        particle.style.top = -(Math.random() * 10 + 5) + 'vh'; 
-        
-        // 隨機大小 (微粒更小)
-        const size = Math.random() * 8 + 3; // 3px to 11px
-        particle.style.width = size + 'px';
-        particle.style.height = size + 'px';
+    border-radius: 15px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+}
 
-        // 隨機動畫速度 (更慢)
-        particle.style.animationDuration = Math.random() * 15 + 10 + 's'; // 10s to 25s
-        
-        // ⚡️ 修正: 根據是否為立即模式設定動畫延遲
-        let maxDelay = isImmediate ? 0.5 : 4; // 立即模式最大延遲 0.5s，循環模式最大延遲 4s
-        particle.style.animationDelay = Math.random() * maxDelay + 's'; 
-        
-        // 隨機初始透明度 (與 twinkle 動畫配合)
-        particle.style.opacity = Math.random() * 0.5 + 0.3; // 0.3 to 0.8 opacity
+.glass-card {
+    background-color: var(--card-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background-color 0.5s;
+}
 
-        // 核心修正：根據模式設定顏色和發光效果
-        const isDarkMode = body.classList.contains('dark-mode');
-        let particleColor;
+/* 核心修正 (桌面版): 實現緊密相接的滾動推進效果 */
+.sticky-card {
+    position: sticky;
+    top: 10vh; /* ⚡️ 調整: 略微提升黏貼位置，實現更緊密相接 */
+    z-index: 20; 
+    transition: top 0.3s; 
+}
 
-        if (isDarkMode) {
-            // 夜間模式：統一白色星光
-            particleColor = 'var(--particle-color-1)'; // 即白色
-            particle.style.boxShadow = '0 0 5px 1px rgba(255, 255, 255, 0.7)'; // 強白色發光
-        } else {
-            // 日間模式：隨機糖果色
-            const colorIndex = Math.floor(Math.random() * 4) + 1; // 1, 2, 3, or 4
-            particleColor = `var(--particle-color-${colorIndex})`; 
-            
-            // 由於背景較亮，我們使用柔和的同色發光
-            // 透過獲取計算後的顏色值來創建柔和陰影
-            const computedStyle = getComputedStyle(document.documentElement);
-            const actualColor = computedStyle.getPropertyValue(particleColor).trim();
-            
-            particle.style.boxShadow = `0 0 5px 1px ${actualColor}70`; // 70% 透明度的柔和發光
-        }
-        
-        particle.style.backgroundColor = particleColor;
+/* 確保卡片在未黏貼前從極高位置開始滾動，實現緊密相接 (桌面版) */
+.content-block .card { 
+    margin-top: 10vh; /* ⚡️ 調整: 極大化減少初始上邊距，實現緊密相接 */
+    margin-bottom: 0;
+}
 
+.push-space {
+    /* 創造足夠的空間讓 sticky card 向上滾動 */
+    height: 80vh; /* ⚡️ 調整: 增大推進空間，維持滾動流暢度 */
+}
 
-        effectContainer.appendChild(particle);
-
-        // 移除跑出視窗的微粒
-        setTimeout(() => {
-            particle.remove();
-        }, parseFloat(particle.style.animationDuration) * 1000); 
-    }
-
-    if (toggleEffectButton) {
-        toggleEffectButton.addEventListener('click', () => {
-            effectActive = !effectActive;
-            effectContainer.classList.toggle('active', effectActive);
-            
-            // 修正: 切換 active-effect class 以實現視覺反饋
-            toggleEffectButton.classList.toggle('active-effect', effectActive); 
-            
-            if (effectActive) {
-                // ⚡️ 修正: 立即生成大量微粒 (initial burst, 數量增加至 20)
-                for(let i = 0; i < 20; i++) {
-                    createParticle(true); // 使用立即模式 (isImmediate = true)
-                }
-
-                // 開始生成微粒 (循環生成時使用非立即模式)
-                particleInterval = setInterval(() => createParticle(false), 500); 
-                
-            } else {
-                // 停止生成並清除現有的微粒
-                clearInterval(particleInterval);
-                effectContainer.querySelectorAll('.star-particle').forEach(p => p.remove());
-            }
-        });
-    }
-
-    // --- 3. 側邊導航點點擊邏輯 (關鍵修正區塊) ---
-    function initSideNavigation() {
-        navDots.forEach(dot => {
-            dot.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = dot.getAttribute('data-target');
-                const targetSection = document.getElementById(targetId);
-                
-                if (targetSection) {
-                    targetSection.scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'start' // 確保區塊頂部對齊視窗頂部
-                    });
-                }
-            });
-        });
-    }
-    
-    // --- 4. 滾動時導航點的狀態更新 ---
-    const sections = document.querySelectorAll('.content-block');
-
-    function updateNavDots() {
-        let currentActiveDot = null;
-        
-        sections.forEach(section => {
-            const rect = section.getBoundingClientRect();
-            
-            // 判斷區塊是否在視窗的上方四分之一處 (作為活動區塊的判定點)
-            const isVisible = rect.top <= window.innerHeight * 0.25 && rect.bottom >= window.innerHeight * 0.25;
-
-            if (isVisible) {
-                // 找到對應的導航點
-                const dot = document.querySelector(`.nav-dot[data-target="${section.id}"]`);
-                if (dot) {
-                    currentActiveDot = dot;
-                }
-            }
-        });
-
-        // 移除所有 active 狀態，並設定目前活動的點
-        navDots.forEach(dot => dot.classList.remove('active'));
-        if (currentActiveDot) {
-            currentActiveDot.classList.add('active');
-        }
-    }
-    
-    // 首頁按鈕
-    if (goHomeButton) {
-        goHomeButton.addEventListener('click', () => {
-            const heroSection = document.getElementById('hero-section');
-            if (heroSection) {
-                heroSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    }
-
-    // 監聽滾動事件
-    window.addEventListener('scroll', updateNavDots);
-    // 初始載入時執行一次
-    updateNavDots();
-
-
-    // --- 5. 2D 橫向跑酷遊戲邏輯 (包含上次的修正) ---
-    function initRunnerGame() {
-        const canvas = document.getElementById('runnerCanvas');
-        if (!canvas) return; // 確保元素存在
-        
-        const ctx = canvas.getContext('2d');
-        const highScoreDisplay = document.getElementById('highScore');
-        const currentScoreDisplay = document.getElementById('currentScore');
-
-        // 遊戲設定
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const groundHeight = 20;
-        const groundY = canvasHeight - groundHeight;
-        
-        // 儲存分數
-        let highScore = localStorage.getItem('runnerHighScore') ? parseInt(localStorage.getItem('runnerHighScore')) : 0;
-        highScoreDisplay.textContent = highScore;
-        
-        let gameFrame;
-        let isGameRunning = false;
-        let isGameOver = false; // 新增變數：指示遊戲是否處於結束狀態
-        let score = 0;
-        let speed = 5; 
-        let obstacleTimeout;
-        
-        // 玩家 (Player)
-        let player = {
-            width: 15,
-            height: 20,
-            x: 50,
-            y: groundY - 20,
-            vy: 0, 
-            gravity: 0.5,
-            jumpStrength: -10,
-            isJumping: false
-        };
-
-        // 障礙物 (Obstacles)
-        let obstacles = [];
-        
-        // --- 繪圖工具 ---
-
-        function getStyle(prop) {
-            // 獲取 CSS 變數值
-            return getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
-        }
-
-        function drawPlayer() {
-            ctx.fillStyle = getStyle('--game-element-color');
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-        }
-
-        function drawGround() {
-            ctx.strokeStyle = getStyle('--game-line-color');
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, groundY);
-            ctx.lineTo(canvasWidth, groundY);
-            ctx.stroke();
-        }
-
-        function drawObstacle(obs) {
-            ctx.fillStyle = getStyle('--game-element-color');
-            ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-        }
-        
-        function drawScore() {
-            currentScoreDisplay.textContent = score;
-            highScoreDisplay.textContent = highScore;
-        }
-
-        // --- 遊戲邏輯 ---
-        
-        function updatePlayer() {
-            player.vy += player.gravity;
-            player.y += player.vy;
-
-            if (player.y >= groundY - player.height) {
-                player.y = groundY - player.height;
-                player.isJumping = false;
-                player.vy = 0;
-            }
-        }
-        
-        function updateObstacles() {
-            for (let i = 0; i < obstacles.length; i++) {
-                let obs = obstacles[i];
-                obs.x -= speed;
-
-                // 檢查碰撞
-                if (
-                    player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y + player.height > obs.y
-                ) {
-                    endGame();
-                    return;
-                }
-
-                // 移除跑出畫面的障礙物
-                if (obs.x + obs.width < 0) {
-                    obstacles.splice(i, 1);
-                    i--; 
-                    score++;
-                }
-            }
-        }
-        
-        // 難度控制：根據分數增加障礙物複雜度
-        function getDifficultyParams(currentScore) {
-            let baseSpeed = 5;
-            let maxSpeed = 10;
-            let minGap = 80; 
-            let maxGap = 200;
-            
-            let minObstacleHeight = 20; 
-            let maxObstacleHeight = 40; 
-            let minObstacleWidth = 15;
-            let maxObstacleWidth = 50; 
-
-            if (currentScore >= 5) {
-                baseSpeed = 6;
-                minGap = 70;
-            }
-            if (currentScore >= 15) {
-                baseSpeed = 7;
-                maxObstacleHeight = 55;
-                maxGap = 150;
-            }
-            if (currentScore >= 30) {
-                baseSpeed = 8;
-                minGap = 60; 
-                maxObstacleWidth = 60;
-            }
-            
-            // 速度平滑增加
-            speed = Math.min(maxSpeed, baseSpeed + currentScore * 0.1);
-            
-            return {
-                width: Math.random() * (maxObstacleWidth - minObstacleWidth) + minObstacleWidth, 
-                height: Math.random() * (maxObstacleHeight - minObstacleHeight) + minObstacleHeight, 
-                gap: Math.random() * (maxGap - minGap) + minGap,
-            };
-        }
-
-
-        function spawnObstacle() {
-            if (!isGameRunning) return;
-
-            const params = getDifficultyParams(score);
-
-            if (obstacles.length > 0) {
-                const lastObs = obstacles[obstacles.length - 1];
-                const requiredGap = params.gap + lastObs.width;
-                
-                if (canvasWidth - lastObs.x < requiredGap) {
-                    const nextAttemptDelay = 50 + Math.random() * 50; 
-                    obstacleTimeout = setTimeout(spawnObstacle, nextAttemptDelay);
-                    return;
-                }
-            }
-
-            const width = params.width;
-            const height = params.height;
-
-            obstacles.push({
-                x: canvasWidth,
-                y: groundY - height,
-                width: width,
-                height: height
-            });
-            
-            // --- 障礙物生成間隔邏輯 ---
-            const minBaseInterval = 800; 
-            const maxBaseInterval = 1800; 
-            
-            const randomBase = Math.random() * (maxBaseInterval - minBaseInterval) + minBaseInterval;
-            
-            const speedFactor = speed / 5; 
-
-            const nextSpawnDelay = randomBase / speedFactor; 
-            
-            const finalDelay = Math.max(400, nextSpawnDelay); 
-
-            obstacleTimeout = setTimeout(spawnObstacle, finalDelay);
-        }
-
-
-        function gameLoop() {
-            if (!isGameRunning) return;
-
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            
-            // 繪製背景
-            ctx.fillStyle = getStyle('--game-canvas-bg');
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-            updatePlayer();
-            updateObstacles();
-            drawGround();
-            drawPlayer();
-            
-            obstacles.forEach(drawObstacle);
-            drawScore();
-
-            gameFrame = requestAnimationFrame(gameLoop);
-        }
-
-        // --- 控制輸入 ---
-        
-        function playerJump() {
-            if (isGameOver) {
-                // 如果處於結束狀態，則呼叫 startGame
-                startGame();
-                return;
-            }
-            
-            if (!player.isJumping) {
-                if (!isGameRunning) {
-                    startGame();
-                    return;
-                }
-                player.isJumping = true;
-                player.vy = player.jumpStrength;
-            }
-        }
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' || e.key === ' ') {
-                e.preventDefault(); 
-                playerJump();
-            }
-        });
-        
-        canvas.addEventListener('mousedown', playerJump);
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault(); 
-            playerJump();
-        });
-
-
-        // --- 遊戲狀態控制 ---
-
-        function startGame() {
-            if (isGameRunning) return; 
-
-            player.y = groundY - player.height;
-            player.isJumping = false;
-            player.vy = 0;
-            obstacles = [];
-            score = 0;
-            speed = 5; 
-            
-            isGameRunning = true;
-            isGameOver = false; // 遊戲開始，重設結束標記
-
-            gameFrame = requestAnimationFrame(gameLoop);
-            
-            obstacleTimeout = setTimeout(spawnObstacle, 1000); 
-        }
-
-        function endGame() {
-            isGameRunning = false;
-            cancelAnimationFrame(gameFrame);
-            clearTimeout(obstacleTimeout); 
-            
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('runnerHighScore', highScore);
-            }
-            drawScore();
-            
-            // 立即顯示紅屏碰撞效果
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-            
-            // 短暫延遲後顯示重新開始的提示，並設定 isGameOver = true，允許點擊重啟
-            setTimeout(() => {
-                ctx.fillStyle = getStyle('--game-canvas-bg');
-                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-                drawGround();
-                drawPlayer();
-                
-                ctx.fillStyle = getStyle('--text-color');
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Tap or Press Space to Restart!', canvasWidth / 2, canvasHeight / 2);
-
-                isGameOver = true; // 關鍵修正：確保顯示提示後才能重新開始
-            }, 100);
-        }
-
-        // 初始繪製
-        function drawInitialState() {
-            ctx.fillStyle = getStyle('--game-canvas-bg');
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-            drawGround();
-            drawPlayer();
-            
-            ctx.fillStyle = getStyle('--text-color');
-            ctx.font = '16px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Tap or Press Space to Start!', canvasWidth / 2, canvasHeight / 2);
-
-            drawScore(); 
-            isGameOver = true; // 初始狀態視為可以開始的"結束"狀態
-        }
-        
-        drawInitialState();
+/* 行動版優化 (600px 以下) */
+@media (max-width: 600px) {
+    .card {
+        padding: 20px;
+        /* 行動版上卡片寬度應更彈性 */
+        width: auto; 
+        margin: 20px auto; 
     }
     
-    // ----------------------------------------------------------------
-    // --- 6. 3D 立方體互動邏輯 (物理速度版 + 點擊拖動) ---
-    // ----------------------------------------------------------------
-    function initCubeInteraction() {
-        const cube = document.getElementById('cube');
-        const container = document.getElementById('contact-section');
-        const cubeContainer = document.getElementById('cube-container');
-        if (!cube || !container || !cubeContainer) return;
-        
-        const influenceRadius = 150; // 感應半徑 (用於滑鼠靠近時的物理感應)
-        
-        let currentRotateX = 0;
-        let currentRotateY = 0;
-        
-        let autoRotateId = null;
-        let isInteracting = false; // 紀錄滑鼠是否在感應圈內 (用於 hover 效果)
-        let isDragging = false;    // 紀錄滑鼠是否按住 (用於 click and drag)
-        let lastX = 0;             // 紀錄拖動時的上一個 X 座標
-        let lastY = 0;             // 紀錄拖動時的上一個 Y 座標
-
-        // 自動旋轉相關變數
-        let lastTime = 0;
-        const autoRotateSpeed = -0.1; // 自動向左慢轉速度
-
-        function updateRotation() {
-            cube.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
-        }
-
-        // 自動旋轉迴圈
-        function autoRotateLoop(timestamp) {
-            // 只有在沒有互動且沒有拖動時才自動轉
-            if (!isInteracting && !isDragging) { 
-                if (!lastTime) lastTime = timestamp;
-                const deltaTime = timestamp - lastTime;
-                lastTime = timestamp;
-
-                // 自動向左轉 (Y軸持續減少)
-                currentRotateY += autoRotateSpeed * (deltaTime / 16.67);
-                
-                updateRotation();
-                autoRotateId = requestAnimationFrame(autoRotateLoop);
-            } else {
-                lastTime = 0; 
-            }
-        }
-
-        function startAutoRotation() {
-            // 停止 CSS 動畫 (如果有的話)
-            cube.style.animation = 'none';
-            if (autoRotateId === null) {
-                lastTime = 0;
-                autoRotateLoop(0); 
-            }
-        }
-        
-        function stopAutoRotation() {
-            if (autoRotateId !== null) {
-                cancelAnimationFrame(autoRotateId);
-                autoRotateId = null;
-            }
-        }
-
-        // 1. 滑鼠按下事件 (在立方體容器上觸發)
-        cubeContainer.addEventListener('mousedown', (e) => {
-            e.preventDefault(); 
-            
-            // 阻止 hover 效果邏輯運行
-            isInteracting = false; 
-            stopAutoRotation();
-            cube.style.animation = 'none';
-
-            isDragging = true;
-            lastX = e.clientX;
-            lastY = e.clientY;
-        });
-
-        // 2. 滑鼠放開事件 (在文件上觸發，確保拖到畫布外也能停止)
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                // 拖動結束後，立即啟動自動旋轉
-                startAutoRotation(); 
-            }
-        });
-
-        // 3. 監聽滑鼠移動 (同時處理拖動和靠近感應)
-        container.addEventListener('mousemove', (e) => {
-            
-            if (isDragging) {
-                // 模式 A: 點擊拖動 (優先)
-                const deltaX = e.clientX - lastX;
-                const deltaY = e.clientY - lastY;
-                
-                // 乘數 0.5 決定了旋轉的靈敏度
-                currentRotateY += deltaX * 0.5; // 左右移動轉 Y 軸 (拖動方向正確)
-                // ⚡️ 關鍵修正：將負號改為正號，實現物理抓取感 (向下拉動時，方塊向上翻)
-                currentRotateX += deltaY * 0.5; // 上下移動轉 X 軸 
-
-                updateRotation();
-                
-                // 更新位置
-                lastX = e.clientX;
-                lastY = e.clientY;
-                
-                return; // 拖動模式下，不執行下面的靠近感應邏輯
-            } 
-            
-            // 模式 B: 靠近感應 (只有在沒有拖動時才執行)
-            const cubeRect = cubeContainer.getBoundingClientRect();
-            const cubeCenterX = cubeRect.left + cubeRect.width / 2;
-            const cubeCenterY = cubeRect.top + cubeRect.height / 2;
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
-
-            // 計算距離
-            const distance = Math.sqrt(
-                Math.pow(mouseX - cubeCenterX, 2) + Math.pow(mouseY - cubeCenterY, 2)
-            );
-            
-            if (distance < influenceRadius) {
-                // --- 進入感應範圍 ---
-                isInteracting = true;
-                stopAutoRotation();
-                cube.style.animation = 'none';
-
-                // 物理旋轉邏輯（使用 movementX/Y 的速度感應）
-                const deltaX = e.movementX || 0;
-                const deltaY = e.movementY || 0;
-
-                currentRotateY += deltaX * 0.5; 
-                currentRotateX -= deltaY * 0.5; // 這裡保留鏡頭視角，因為它是基於速度/慣性的
-
-                updateRotation();
-
-            } else {
-                // --- 離開感應範圍 ---
-                if (isInteracting) {
-                    isInteracting = false;
-                    startAutoRotation();
-                }
-            }
-        });
-
-        // 4. 滑鼠離開整個區域時確保恢復自動旋轉 (僅處理非拖動狀態的離開)
-        container.addEventListener('mouseleave', () => {
-            if (!isDragging) { // 確保當滑鼠拖動離開時，不觸發此處邏輯
-                isInteracting = false;
-                startAutoRotation();
-            }
-        });
-
-        // 初始啟動
-        startAutoRotation(); 
+    /* 行動版卡片黏貼位置 */
+    .sticky-card {
+        top: 10vh; 
     }
 
-    // --- 程式初始化 ---
-    initDockEffect();
-    initSideNavigation(); // ⚡️ 啟用導航點
-    initRunnerGame();
-    initCubeInteraction(); // ⚡️ 啟用 3D 立方體互動
-});
+    /* 行動版起始位置與推進空間 (可根據需要微調) */
+    .content-block .card { 
+        margin-top: 15vh; 
+    }
+    
+    .push-space {
+        height: 50vh; 
+    }
+}
+
+/*
+=========================================================
+3.1 Lovely Section 圖片畫廊樣式
+=========================================================
+*/
+.photo-gallery {
+    display: flex;
+    justify-content: center; 
+    gap: 30px;
+    margin-top: 20px;
+    flex-wrap: wrap; 
+}
+
+.photo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 150px; 
+    text-align: center;
+}
+
+.round-photo {
+    /* 圖片尺寸設定 */
+    width: 150px; 
+    height: 150px; 
+    
+    /* 核心: 將圖片修剪成圓形 */
+    border-radius: 50%;
+    
+    /* 確保圖片覆蓋容器，防止變形 */
+    object-fit: cover; 
+    
+    /* 增加陰影 */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.round-photo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.photo-caption {
+    margin-top: 10px;
+    font-size: 1em;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+
+/*
+=========================================================
+4. Dock 容器與圖標 (新 Tooltip 樣式)
+=========================================================
+*/
+#dock {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 15px;
+    border-radius: 15px;
+    background-color: var(--dock-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+    border: 1px solid var(--glass-border);
+}
+
+.dock-icon {
+    background: none;
+    border: none;
+    color: var(--icon-color);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.2s, color 0.5s, opacity 0.3s, background-color 0.3s, box-shadow 0.3s; /* ⚡️ 增加過渡效果 */
+    outline: none;
+    text-decoration: none; 
+    position: relative; /* 為了讓 Tooltip 絕對定位 */
+}
+
+/* ⚡️ 新增: 特效啟動時的視覺反饋 */
+.dock-icon.active-effect {
+    color: var(--icon-color); /* 圖標顏色保持不變 */
+    background-color: var(--effect-active-bg); /* 使用定義的半透明背景色 */
+    border-radius: 50%; /* 使其像被點亮的圓點 */
+    box-shadow: 0 0 10px var(--effect-active-glow); /* 添加發光效果，強度增加 */
+}
+
+
+/* ⚡️ 新增 Tooltip 樣式 */
+.dock-icon::after {
+    content: attr(title); /* 從 title 屬性獲取文字 */
+    position: absolute;
+    bottom: 100%; /* 位於圖標上方 */
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px); /* 初始位置和居中 */
+    
+    /* 泡泡樣式 */
+    background-color: #333; /* 黑色背景 */
+    color: #fff; /* 白色文字 */
+    padding: 2px 6px; 
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.5em; /* 調整為 0.5em (約 8px) */
+    font-weight: normal;
+    
+    /* 隱藏和過渡效果 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    
+    z-index: 101; /* 確保在 Dock 上方 */
+}
+
+/* 小三角形箭頭 */
+.dock-icon::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 2px); /* 位於提示框下方邊緣 */
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 5px 5px 0 5px;
+    border-color: #333 transparent transparent transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+    z-index: 101;
+}
+
+/* 顯示狀態 - 由 JS 動態添加 data-show 屬性來控制 */
+.dock-icon[data-show="true"]::after,
+.dock-icon[data-show="true"]::before {
+    opacity: 1;
+    visibility: visible;
+    /* 提示框向上移動，創造彈出效果 */
+    transform: translateX(-50%) translateY(-10px); 
+}
+.dock-icon[data-show="true"]::before {
+    /* 箭頭不需移動 */
+    transform: translateX(-50%);
+}
+
+/*
+=========================================================
+4.1 Contact Section 圖標美化 (修正)
+=========================================================
+*/
+
+/* ⚡️ 修正: 定義圖標容器，套用玻璃效果 */
+.contact-icons-row {
+    display: flex;
+    justify-content: center;
+    gap: 30px; /* 增加圖標間距 */
+    margin: 20px 0;
+}
+
+.contact-icons-row a {
+    /* 圖標的容器 (連結) 設置 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* 玻璃圓形容器 */
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    
+    background-color: var(--card-bg); /* 繼承卡片背景，讓它有玻璃感 */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--glass-border);
+
+    transition: transform 0.3s ease-out, box-shadow 0.3s, background-color 0.3s;
+    text-decoration: none;
+    position: relative; /* 用於底部色彩標記 */
+    overflow: hidden; /* 隱藏標記在靜止時的部分 */
+}
+
+/* 底部色彩標記 */
+.contact-icons-row a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px; /* 標記高度 */
+    transition: height 0.3s ease-out;
+}
+
+/* 懸停效果: 容器放大並讓標記擴展 */
+.contact-icons-row a:hover {
+    transform: scale(1.15); /* 放大容器 */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.contact-icons-row a:hover::after {
+    height: 100%; /* 標記顏色擴展至整個容器 */
+    opacity: 0.3; /* 降低擴展後的透明度 */
+}
+
+
+/* 圖標本身樣式 */
+.contact-icons-row i {
+    font-size: 2.2em; /* 圖標大小 */
+    color: var(--icon-color); /* 繼承夜/日模式顏色 */
+    transition: color 0.3s;
+    z-index: 1; /* 確保圖標在顏色標記上方 */
+}
+
+
+/* ⚡️ 品牌色標記: 僅用於 ::after 偽元素 (底部標記) */
+/* Email (@) */
+.contact-icons-row a:has(.fa-at)::after {
+    background-color: #4285F4; /* Google Blue */
+}
+.contact-icons-row a:has(.fa-at):hover i {
+    color: #4285F4; 
+}
+
+/* Instagram */
+.contact-icons-row a:has(.fa-instagram)::after {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); /* Instagram Gradient */
+}
+.contact-icons-row a:has(.fa-instagram):hover i {
+    color: #cc2366; 
+}
+
+/* Threads */
+.contact-icons-row a:has(.fa-threads)::after {
+    background-color: #000; /* Threads Black */
+}
+/* 夜間模式下 Threads 圖標變白 */
+.dark-mode .contact-icons-row a:has(.fa-threads)::after {
+    background-color: #fff;
+}
+.contact-icons-row a:has(.fa-threads):hover i {
+    color: #000; /* 懸停時圖標變黑 */
+}
+.dark-mode .contact-icons-row a:has(.fa-threads):hover i {
+    color: #fff; /* 夜間模式懸停時圖標變白 */
+}
+
+
+/*
+=========================================================
+4.2 Coming Soon 圖標美化 (新增)
+=========================================================
+*/
+
+.coming-soon-icons-row {
+    display: flex;
+    flex-wrap: wrap; /* 允許換行 */
+    justify-content: center;
+    gap: 15px; /* 圖標間距 */
+    margin-top: 15px;
+    padding: 10px;
+}
+
+.coming-soon-icons-row i {
+    /* 圓形容器基礎設定 (使用 i 標籤自身作為容器) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* 尺寸較小 */
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+    
+    color: var(--icon-color);
+    
+    /* 玻璃效果 */
+    background-color: var(--card-bg); 
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    
+    /* 懸停過渡 */
+    transition: transform 0.3s, box-shadow 0.3s, opacity 0.3s;
+    
+    /* 營造「Coming Soon」的感覺：半透明、略微失活 */
+    opacity: 0.5;
+    cursor: default; /* 雖然沒有連結，但視覺上像按鈕 */
+}
+
+.coming-soon-icons-row i:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px var(--icon-color);
+    opacity: 0.8; /* 懸停時稍微亮一些 */
+}
+
+
+/*
+=========================================================
+5. 側邊導航點 (已修改為無泡泡提示文字)
+=========================================================
+*/
+#side-navigation {
+    position: fixed;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* 稍微增加間距 */
+    z-index: 50;
+    /* ⚡️ 修正: 移除全局透明度 */
+    /* opacity: 0.8; */ 
+}
+
+.nav-dot {
+    /* ⚡️ 修正: 基礎尺寸放大 */
+    width: 14px; 
+    height: 14px;
+    border-radius: 50%; 
+    background-color: var(--card-bg); /* ⚡️ 使用卡片背景色，增加玻璃感 */
+    border: 1px solid var(--glass-border); /* ⚡️ 添加玻璃邊框 */
+    cursor: pointer;
+    
+    /* ⚡️ 新增: 玻璃模糊效果 */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    
+    transition: background-color 0.3s, transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+    opacity: 0.8; /* ⚡️ 非活動狀態下略微降低透明度 */
+    position: relative;
+    outline: none;
+}
+
+.nav-dot:hover {
+    transform: scale(1.3); /* ⚡️ 懸停時放大更多 */
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.nav-dot.active {
+    /* ⚡️ 修正: 活動點使用 Icon 顏色，使其突出 */
+    background-color: var(--icon-color); 
+    border: 1px solid var(--icon-color);
+    opacity: 1;
+    transform: scale(1.5); /* ⚡️ 活動時放大最明顯 */
+    
+    /* ⚡️ 新增: Active 狀態發光效果 */
+    box-shadow: 0 0 10px var(--icon-color); 
+}
+
+/* 導航點標題提示 (保持不變) */
+.nav-dot::after {
+    content: attr(data-title);
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    
+    background: none; 
+    border: none; 
+    backdrop-filter: none; 
+    
+    color: var(--text-color);
+    padding: 0 5px; 
+    border-radius: 0;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, right 0.3s; 
+    font-size: 0.9em;
+}
+
+.nav-dot:hover::after {
+    opacity: 1;
+    right: 25px; 
+}
+
+/*
+=========================================================
+6. 跑酷遊戲樣式
+=========================================================
+*/
+#runner-game-container {
+    background-color: var(--game-bg);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 20px;
+    box-shadow: 0 4px 10px var(--game-shadow-color);
+    transition: background-color 0.5s;
+}
+
+#runnerCanvas {
+    display: block;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#game-info {
+    text-align: center;
+    color: var(--text-color);
+    margin-top: 5px;
+}
+
+.score-display {
+    font-size: 0.8em; 
+    opacity: 0.8;
+}
+
+
+/*
+=========================================================
+7. 響應式調整 (手機板)
+=========================================================
+*/
+@media (max-width: 600px) {
+    
+    /* 隱藏側邊導航點 */
+    #side-navigation {
+        display: none;
+    }
+    
+    /* ⚡️ 修正卡片左右間距不平均的問題 (填滿 #content-wrapper) */
+    .card {
+        width: auto; /* 移除固定寬度 */
+        max-width: none; /* 移除 max-width 限制 */
+        margin: 30px 0; /* 移除左右 auto margin */
+    }
+
+    /* 調整 Dock 的位置與大小 */
+    #dock {
+        bottom: 10px;
+        left: 50%;
+        gap: 10px;
+        padding: 8px 10px;
+    }
+    
+    .dock-icon {
+        font-size: 1.2em;
+        padding: 3px;
+    }
+    
+    /* ⚡️ 還原 Contact 區塊在手機上的圖標大小 */
+    .contact-icons-row a {
+        width: 45px;
+        height: 45px;
+    }
+    .contact-icons-row i {
+        font-size: 1.8em;
+    }
+    
+    /* 調整內容區塊的間距 */
+    .content-block {
+        min-height: 80vh; 
+        padding: 30px 10px;
+    }
+
+    /* 調整卡片的位置 */
+    .sticky-card {
+        top: 10vh; 
+    }
+    
+    /* 確保卡片在未黏貼前位於 section 的垂直中心 */
+    .content-block .card { 
+        margin-top: 15vh; /* 減少 mobile 模式下的頂部空間 */
+        margin-bottom: 0;
+    }
+    
+    /* 調整 Lovely 區塊的間距 */
+    .photo-gallery {
+        flex-direction: row; 
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .round-photo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .photo-item {
+        max-width: 100px;
+    }
+    
+    /* 跑酷遊戲容器調整 */
+    #runner-game-container {
+        padding: 5px;
+    }
+    
+    #runnerCanvas {
+        width: 280px;
+    }
+    
+    /* 手機版 h2 字體也調整 */
+    h2 {
+        font-size: 1.7em; 
+    }
+    
+    /* 手機版隱藏 Tooltip */
+    .dock-icon::after,
+    .dock-icon::before {
+        content: none !important;
+    }
+}
+
+
+/*
+=========================================================
+8. 星光微粒特效樣式 (取代落葉)
+=========================================================
+*/
+#effect-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; 
+    z-index: 0; 
+    overflow: hidden;
+}
+
+#effect-container:not(.active) {
+    display: none;
+}
+
+/* 更改為星光微粒樣式 */
+.star-particle { 
+    position: absolute;
+    z-index: 10;
+    /* 結合漂浮和閃爍動畫 */
+    animation: 
+        float 15s ease-in-out, /* 修正: 移除 infinite，讓它只跑一次 */
+        twinkle 3s ease-in-out infinite alternate; /* 閃爍效果 (3秒一循環) */
+    
+    /* 關鍵修正: 確保動畫結束後停留在 100% 狀態 (即螢幕底部以外) */
+    animation-fill-mode: forwards; 
+    
+    transform-origin: center center; 
+    
+    /* 設置為圓點，box-shadow 將在 JS 中添加，因為顏色會變 */
+    border-radius: 50%; /* 圓形 */
+}
+
+/* 柔和漂浮動畫 (取代 fall) */
+@keyframes float {
+    0% {
+        transform: translate(0vw, -10vh) scale(0.5);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    100% {
+        /* 緩慢向下漂浮並帶有水平位移 */
+        /* 修正: 將 Y 軸位移增加至 120vh，確保微粒在動畫結束時已完全離開視窗底部。 */
+        transform: translate(20vw, 120vh) scale(1.2); 
+        opacity: 0;
+    }
+}
+
+/* 閃爍動畫 */
+@keyframes twinkle {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.3; }
+}
+
+/*
+=========================================================
+9. 3D 立方體樣式與動畫
+=========================================================
+*/
+#cube-container {
+    perspective: 800px; /* 設定 3D 視角 */
+    width: 40px; /* ⚡️ 修正: 縮小尺寸 */
+    height: 40px; /* ⚡️ 修正: 縮小尺寸 */
+    margin: 40px auto 20px; /* 置中並增加上下間距 */
+}
+
+#cube {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease-out; /* 旋轉變化的平滑過渡 */
+    /* 初始狀態，由 JS 控制動畫/旋轉，這裡的 CSS keyframes 僅作為參考 */
+    animation: auto-rotate 10s linear infinite; 
+}
+
+/* 自動向左慢轉動畫 */
+@keyframes auto-rotate {
+    0% { transform: rotateY(0deg); } 
+    100% { transform: rotateY(-360deg); } /* 向左轉 (Y 軸負方向) */
+}
+
+#cube div {
+    position: absolute;
+    width: 40px; /* ⚡️ 修正: 縮小尺寸 */
+    height: 40px; /* ⚡️ 修正: 縮小尺寸 */
+    opacity: 0.4;
+    background-color: var(--text-color); /* 使用文字色作為基礎顏色 */
+    border: 1px solid var(--icon-color);
+}
+
+/* 立方體的六個面 */
+#cube div:nth-child(1) { 
+    transform: rotateY(0deg) translateZ(20px); /* Front (⚡️ 修正: translateZ = 40px / 2) */
+    background-color: var(--particle-color-1); 
+}
+#cube div:nth-child(2) { 
+    transform: rotateY(180deg) translateZ(20px); /* Back (⚡️ 修正) */
+    background-color: var(--particle-color-2);
+}
+#cube div:nth-child(3) { 
+    transform: rotateY(90deg) translateZ(20px); /* Right (⚡️ 修正) */
+    background-color: var(--particle-color-3);
+}
+#cube div:nth-child(4) { 
+    transform: rotateY(-90deg) translateZ(20px); /* Left (⚡️ 修正) */
+    background-color: var(--particle-color-4);
+}
+#cube div:nth-child(5) { 
+    transform: rotateX(90deg) translateZ(20px); /* Top (⚡️ 修正) */
+    background-color: var(--text-color);
+}
+#cube div:nth-child(6) { 
+    transform: rotateX(-90deg) translateZ(20px); /* Bottom (⚡️ 修正) */
+    background-color: var(--text-color);
+}
+
+/*
+=========================================================
+10. 揮手動畫效果
+=========================================================
+*/
+.waving-hand {
+    /* 確保可以單獨設定 transform 屬性 */
+    display: inline-block;
+    
+    /* 將旋轉中心設置在右下角 (75% 75%)，模擬手腕的位置 */
+    transform-origin: 75% 75%; 
+    
+    /* 應用揮手動畫：持續 2.5 秒，無限重複 */
+    animation: wave 2.5s infinite;
+}
+
+@keyframes wave {
+    0% { transform: rotate( 0.0deg) }   /* 開始：手腕靜止 */
+    15% { transform: rotate( 14.0deg) } /* 第一次向外 (右) 揮動 */
+    30% { transform: rotate(-8.0deg) }  /* 向內 (左) 揮動 */
+    45% { transform: rotate( 14.0deg) } /* 第二次向外 (右) 揮動 */
+    60% { transform: rotate(-4.0deg) }  
+    75% { transform: rotate( 8.0deg) }
+    100% { transform: rotate( 0.0deg) } /* 結束：回到靜止，開始下一個循環 */
+}
