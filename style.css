@@ -159,9 +159,9 @@ h2 {
 */
 .card {
     padding: 30px;
-    /* ⚡️ 修正: 設定固定寬度並居中顯示 */
+    /* 確保卡片有固定寬度並居中，與之前的討論一致 */
     width: 600px; 
-    max-width: 90%; /* 確保在小螢幕上不會溢出 */
+    max-width: 90%; 
     margin: 30px auto; 
     
     border-radius: 15px;
@@ -176,25 +176,48 @@ h2 {
     transition: background-color 0.5s;
 }
 
-/* 核心修正：讓卡片黏貼在視窗中心附近 */
+/* 核心修正 (桌面版): 實現緊密相接的滾動推進效果 */
 .sticky-card {
     position: sticky;
-    top: 18vh; /* 黏貼在距離頂部 25vh 的位置 (近似置中) */
+    top: 10vh; /* ⚡️ 調整: 略微提升黏貼位置，實現更緊密相接 */
     z-index: 20; 
     transition: top 0.3s; 
 }
 
-/* 確保卡片在未黏貼前位於 section 的垂直中心 */
+/* 確保卡片在未黏貼前從極高位置開始滾動，實現緊密相接 (桌面版) */
 .content-block .card { 
-    margin-top: 25vh; 
+    margin-top: 10vh; /* ⚡️ 調整: 極大化減少初始上邊距，實現緊密相接 */
     margin-bottom: 0;
 }
 
 .push-space {
     /* 創造足夠的空間讓 sticky card 向上滾動 */
-    height: 50vh; 
+    height: 80vh; /* ⚡️ 調整: 增大推進空間，維持滾動流暢度 */
 }
 
+/* 行動版優化 (600px 以下) */
+@media (max-width: 600px) {
+    .card {
+        padding: 20px;
+        /* 行動版上卡片寬度應更彈性 */
+        width: auto; 
+        margin: 20px auto; 
+    }
+    
+    /* 行動版卡片黏貼位置 */
+    .sticky-card {
+        top: 10vh; 
+    }
+
+    /* 行動版起始位置與推進空間 (可根據需要微調) */
+    .content-block .card { 
+        margin-top: 15vh; 
+    }
+    
+    .push-space {
+        height: 50vh; 
+    }
+}
 
 /*
 =========================================================
@@ -780,8 +803,8 @@ h2 {
 */
 #cube-container {
     perspective: 800px; /* 設定 3D 視角 */
-    width: 60px; /* 小小的一個 */
-    height: 60px;
+    width: 40px; /* ⚡️ 修正: 縮小尺寸 */
+    height: 40px; /* ⚡️ 修正: 縮小尺寸 */
     margin: 40px auto 20px; /* 置中並增加上下間距 */
 }
 
@@ -803,8 +826,8 @@ h2 {
 
 #cube div {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 40px; /* ⚡️ 修正: 縮小尺寸 */
+    height: 40px; /* ⚡️ 修正: 縮小尺寸 */
     opacity: 0.4;
     background-color: var(--text-color); /* 使用文字色作為基礎顏色 */
     border: 1px solid var(--icon-color);
@@ -812,27 +835,27 @@ h2 {
 
 /* 立方體的六個面 */
 #cube div:nth-child(1) { 
-    transform: rotateY(0deg) translateZ(30px); /* Front */
+    transform: rotateY(0deg) translateZ(20px); /* Front (⚡️ 修正: translateZ = 40px / 2) */
     background-color: var(--particle-color-1); 
 }
 #cube div:nth-child(2) { 
-    transform: rotateY(180deg) translateZ(30px); /* Back */
+    transform: rotateY(180deg) translateZ(20px); /* Back (⚡️ 修正) */
     background-color: var(--particle-color-2);
 }
 #cube div:nth-child(3) { 
-    transform: rotateY(90deg) translateZ(30px); /* Right */
+    transform: rotateY(90deg) translateZ(20px); /* Right (⚡️ 修正) */
     background-color: var(--particle-color-3);
 }
 #cube div:nth-child(4) { 
-    transform: rotateY(-90deg) translateZ(30px); /* Left */
+    transform: rotateY(-90deg) translateZ(20px); /* Left (⚡️ 修正) */
     background-color: var(--particle-color-4);
 }
 #cube div:nth-child(5) { 
-    transform: rotateX(90deg) translateZ(30px); /* Top */
+    transform: rotateX(90deg) translateZ(20px); /* Top (⚡️ 修正) */
     background-color: var(--text-color);
 }
 #cube div:nth-child(6) { 
-    transform: rotateX(-90deg) translateZ(30px); /* Bottom */
+    transform: rotateX(-90deg) translateZ(20px); /* Bottom (⚡️ 修正) */
     background-color: var(--text-color);
 }
 
